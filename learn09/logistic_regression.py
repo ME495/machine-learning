@@ -23,7 +23,9 @@ y = np.array([])
 def sigmod(x):
     return 1/(1+np.exp(-x))
 
-def calc_cost(X, Y, theta):
+def calc_cost(data, theta):
+    cols = data.shape[1]
+    X, Y = data[:, 0:cols-1], data[:, cols-1:]
     m = X.shape[0]
     left = (-Y)*np.log(sigmod(np.dot(X, theta)))
     right = (1-Y)*np.log(1-sigmod(np.dot(X, theta)))
@@ -39,23 +41,27 @@ def calc_gradient(X, Y, theta):
         grad[j][0] /= m
     return grad
 
-def calc_mean_grad(X, Y, theta):
+def calc_mean_grad(data, theta):
+    cols = data.shape[1]
+    X, Y = data[:, 0:cols-1], data[:, cols-1:]
     return np.mean(np.abs(calc_gradient(X, Y, theta)))
 
-def calc_accuracy(X, Y, theta):
+def calc_accuracy(data, theta):
+    cols = data.shape[1]
+    X, Y = data[:, 0:cols-1], data[:, cols-1:]
     Y1 = np.dot(X, theta)
     Y1[Y1>0.5] = 1
     Y1[Y1<1] = 0
     m = Y1.shape[0]
     return np.sum(Y==Y1)/m
     
-def is_stop(X, Y, theta, stop_type, rest, cost, grad):
+def is_stop(data, theta, stop_type, rest, cost, grad):
     if stop_type==STOP_ITER:
         return rest==0
     elif stop_type==STOP_COST:
-        return calc_cost(X, Y, theta)<cost
+        return calc_cost(data, theta)<cost
     elif stop_type==STOP_GRAD:
-        return calc_mean_grad(X, Y, theta)<grad
+        return calc_mean_grad(data, theta)<grad
     
 '''
 data: 输入数据，数据的最后一列为Y
@@ -98,15 +104,15 @@ def descent(data, ratio, descent_type, stop_type, num=None, count=None, cost=Non
             X, Y = data[begin:begin+num, 0:cols-1], data[begin:begin+num, cols-1:]
             theta -= ratio*calc_gradient(X, Y, theta)
         x = np.append(x, step)
-        y = np.append(y, calc_cost(X, Y, theta))
+        y = np.append(y, calc_cost(data, theta))
         # print(calc_mean_grad(X, Y, theta))
         # print(calc_accuracy(X, Y, theta)) 
         # print(theta)
         # print("--------")
         
-        if is_stop(X, Y, theta, stop_type, count-step, cost, grad):
+        if is_stop(data, theta, stop_type, count-step, cost, grad):
             # print(calc_accuracy(X, Y, theta))
-            print(calc_accuracy(X, Y, theta))
+            print(calc_accuracy(data, theta))
             return theta
 
 def f(x, theta):
@@ -114,7 +120,7 @@ def f(x, theta):
 if __name__=='__main__':
     frame = pd.read_csv('LogiReg_data.txt', names=['exam1', 'exam2', 'accept'])
     data = np.c_[np.ones((frame.shape[0],1)),frame.values]
-    theta = descent(data, 0.001, SMALL_BATCH, STOP_ITER, num=20, count=1000000)
+    theta = descent(data, 0.0003, SMALL_BATCH, STOP_ITER, num=20, count=60000)
     print(theta)
     plt.plot(x, y)
     plt.show()
